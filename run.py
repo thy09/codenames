@@ -63,7 +63,7 @@ def load_words(fname):
     for line in open(fname,'r'):
         words.append(line.rstrip())
 
+load_words('codenames.words')
 if __name__ == "__main__":
     app.debug = True
-    load_words('codenames.words')
-    app.run(port = 8765)
+    app.run(host='0.0.0.0',port = 23332)
