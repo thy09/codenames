@@ -1,0 +1,133 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+<title>Codenames</title>
+<style>
+.word{
+    position: relative;
+    float: left;
+    margin: 1%;
+    width: 18%;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 20px;
+    color: white;
+    background: #555;
+}
+.block.r,
+.word.r.open{
+    background: red;
+}
+.block.b,
+.word.b.open{
+    background: blue;
+}
+.block.x,
+.word.x.open{
+    background: black;
+}
+.block.p,
+.word.p.open{
+    background: #bbb;
+}
+.words{
+    position: relative;
+    background: white;
+    margin: 0 10%;
+    padding: 0;
+}
+.btns,
+.captain{
+    position: relative;
+    margin: 0% 30%;
+    text-align: center;
+}
+.captain .block{
+    float: left;
+    width: 18%;
+    padding-top: 20%;
+    border: 1px white solid;
+}
+.btn{
+    border: 1px solid black;
+    padding: 10px;
+}
+.room{
+    font-size: 30px;
+}
+</style>
+</head>
+<body>
+    <div style="text-align:center;width:100%">房间ID:<span class="room"></span></div>
+    <div class="words"></div>
+    <div class="captain"></div>
+    <div class="btns"></div>
+</body>
+<script src="./static/zepto.js"></script>
+<script>
+var codenames = {
+    load_words : function(words){
+        for (var i=0;i<25;i++){
+            var word = $("<div></div>").addClass("word").attr("id","w"+i).text(words[i]);
+            $(".words").append(word);
+        }
+        $(".words").append($("<div style='clear:both'></div>"));
+    },
+    load_distribution: function(dist){
+        for (var i=0;i<25;i++){
+            $("#w"+i).addClass(dist[i]);
+            var block = $("<div></div>").addClass("block "+dist[i]);
+            if (location.href.indexOf("captain")>-1){
+                $(".captain").append(block);
+            }  
+        }
+        $(".captain").append($("<div style='clear:both'></div>"));
+    },
+    load_opened: function(opened){
+        for (var i=0;i<25;i++){
+            if (opened[i]){
+                $("#w"+i).addClass("open");
+            }else{
+                $("#w"+i).removeClass("open");
+            }
+        }
+    },
+    load_game : function(game){
+        this.load_words(game.words);
+        this.load_distribution(game.dist);
+        this.load_opened(game.opened);
+        this.game = game;
+    },
+    update : function(){
+        $.get("/status"+location.search,"",function(res){
+            this.game = res.game;
+            this.load_opened(this.game.opened);
+            console.log(res);
+        }.bind(this));
+    }
+}
+$(document).ready(function(){
+    $.get("/status"+location.search,"",function(res){
+        codenames.load_game(res.game);
+        $(".room").text(location.search.substring(location.search.indexOf("=")+1));
+        if (location.href.indexOf("captain")==-1){
+            return;
+        }
+        $(".word").each(function(idx,elm){
+            $(elm).click(function(){
+                $(elm).addClass("open");
+                codenames.game.opened[idx] = 1;
+                var url = "/open"+location.search+"&idx="+idx;
+                $.post(url);
+                codenames.update();
+            });
+        })
+    });
+    var url = "/member"+location.search;
+    $(".btns").append($("<div class='btn' onclick='codenames.update()'>刷新信息</div>"));
+    $(".btns").append($("<div><a href="+ url + ">队员链接</a></div>"));
+    $(".btns").append($("<div><a href='/captain'>新建游戏</a></div>"));
+});
+</script>
+</html>
