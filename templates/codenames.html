@@ -110,7 +110,10 @@ div{
 .room{
     font-size: 30px;
 }
-.discussion p{
+.hidden{
+    display: none;
+}
+p{
     margin: 2px;
     padding: 0px;
 }
@@ -119,8 +122,8 @@ div{
 <body>
     <div style="display:none"><img src='./static/logo.png'></img></div>
     <div class="words"></div>
-    <div class="captain"></div>
     <div class="links"></div>
+    <div class="captain hidden"></div>
     <div class="hint"></div>
     <div class="name">姓名:<input id="name"></input></div>
     <div class="sentence">发言:<input id="sentence"></input></div>
@@ -147,9 +150,7 @@ var codenames = {
             }
             $("#w"+i).append("<img src='"+img_url+"'></img>");
             var block = $("<div></div>").addClass("block "+dist[i]);
-            if (location.href.indexOf("captain")>-1){
-                $(".captain").append(block);
-            }
+            $(".captain").append(block);
         }
         $(".captain").append($("<div style='clear:both'></div>"));
     },
@@ -169,9 +170,11 @@ var codenames = {
         this.game = game;
         if (game.start == 'b'){
             $(".captain").addClass("b");
-            $("#new_game").attr("href","/captain?start=r")
+            $("#new_game").attr("href","/captain?start=r");
+            $(".hint").append("<p>此轮游戏由蓝队先开始猜词</p>");
         }else{
-            $("#new_game").attr("href","/captain?start=b")
+            $("#new_game").attr("href","/captain?start=b");
+            $(".hint").append("<p>此轮游戏由红队先开始猜词</p>");
         }
     },
     update : function(){
@@ -189,7 +192,15 @@ var codenames = {
         if (!confirm("确定是队长？队长会看到答案哦！")){
             return;
         }
-        location.href = "/captain"+location.search;
+        $(".word").each(function(idx,elm){
+            $(elm).click(function(){
+                $(elm).addClass("open");
+                codenames.game.opened[idx] = 1;
+                var url = "/open"+location.search+"&idx="+idx;
+                $.post(url,"",this.update.bind(this));
+            }.bind(this));
+        }.bind(this));
+        $(".captain").removeClass("hidden");
     },
     submit : function(){
         var name = $("#name").val();
@@ -216,25 +227,11 @@ $(document).ready(function(){
         codenames.load_game(res.game);
         codenames.update();
         setInterval(codenames.update.bind(codenames),1200);
-        console.log(document.body.clientWidth);
         $(".word").css("font-size",document.body.clientWidth/30);
-        if (location.href.indexOf("captain")==-1){
-            $(".hint").text("分享此页面给朋友们即可开始玩耍！")
-            return;
-        }
-        $(".hint").text("队友猜测时，点击相应代号即可让大家看到该代号的阵营！")
-        $(".word").each(function(idx,elm){
-            $(elm).click(function(){
-                $(elm).addClass("open");
-                codenames.game.opened[idx] = 1;
-                var url = "/open"+location.search+"&idx="+idx;
-                $.post(url,"",codenames.update.bind(codenames));
-            });
-        })
+        $(".hint").append("<p>分享此页面给朋友们即可开始玩耍！</p>")
+        $(".hint").append("<p>队长点击代号即可让大家看到该代号的阵营！</p>")
     });
-    var url = "/member"+location.search;
     $(".btns").append($("<div class='btn' onclick='codenames.submit()'>提交发言</div>"));
-    $(".links").append($("<a href="+ url + ">队员链接</a><span>    </span>"));
     $(".links").append($("<a id = 'new_game' href='/captain'>新建游戏</a>"));
     $(".captain-btns").append($("<div class='btn' onclick='codenames.be_captain()'>我是队长</div>"));
 });
