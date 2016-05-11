@@ -12,7 +12,7 @@ rbx = [9,8,1]
 def captain():
     game = games.get(request.args.get("id"))
     if game == None:
-        idx = initial_game()
+        idx = initial_game(request.args.get("start"))
         return redirect(url_for(".captain",id=idx))
     return render_template("codenames.html")
 
@@ -39,20 +39,27 @@ def openpos():
 def allgame():
     return jsonify({"idx":games.keys()})
 
-def initial_game():
+def initial_game(start):
     upper = 100000000
     idx = random.randint(1,upper)
     while (games.has_key(idx)):
         idx = random.randint(0,upper)
     game = {}
+    if start == 'r':
+        game["start"] = 'r'
+    else:
+        game["start"] = 'b'
+    game['status'] = game['start']
     game["words"] = gen_words()
     game["opened"] = [0]*25
-    game["dist"] = gen_dist()
+    game["dist"] = gen_dist(game["start"])
     games[str(idx)] = game
     return idx
 
-def gen_dist():
+def gen_dist(start):
     dist = ['r']*rbx[0] + ['b']*rbx[1] + ['x']*rbx[2] + ['p']*(count-sum(rbx))
+    if start == 'b':
+        dist[0] = 'b'
     random.shuffle(dist)
     return dist
 
