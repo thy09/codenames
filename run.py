@@ -13,11 +13,15 @@ def captain():
     game = games.get(request.args.get("id"))
     if game == None:
         idx = initial_game(request.args.get("start"))
-        return redirect(url_for(".captain",id=idx))
+        return redirect(url_for(".member",id=idx))
     return render_template("codenames.html")
 
 @app.route("/member")
 def member():
+    game = games.get(request.args.get("id"))
+    if game == None:
+        idx = initial_game(request.args.get("start"))
+        return redirect(url_for(".member",id=idx))
     return render_template("codenames.html")
 
 @app.route("/status")

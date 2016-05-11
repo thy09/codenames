@@ -1,11 +1,12 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1">
 <title>Codenames</title>
 <style>
 div{
     margin: 3px;
+    text-align: center;
 }
 .word{
     position: relative;
@@ -98,6 +99,10 @@ div{
 .btns{
     margin: 0% 30%;
 }
+.captain-btns{
+    margin: 0% 30%;
+    text-align: center;
+}
 .btn{
     border: 1px solid black;
     padding: 10px;
@@ -113,14 +118,15 @@ div{
 </head>
 <body>
     <div style="display:none"><img src='./static/logo.png'></img></div>
-    <div style="text-align:center;width:100%">房间ID:<span class="room"></span></div>
     <div class="words"></div>
     <div class="captain"></div>
     <div class="links"></div>
+    <div class="hint"></div>
     <div class="name">姓名:<input id="name"></input></div>
     <div class="sentence">发言:<input id="sentence"></input></div>
     <div class="btns"></div>
     <div class="discussion"></div>
+    <div class="captain-btns"></div>
 </body>
 <script src="./static/zepto.js"></script>
 <script>
@@ -179,6 +185,12 @@ var codenames = {
             console.log(res);
         }.bind(this));
     },
+    be_captain : function(){
+        if (!confirm("确定是队长？队长会看到答案哦！")){
+            return;
+        }
+        location.href = "/captain"+location.search;
+    },
     submit : function(){
         var name = $("#name").val();
         var sentence = $("#sentence").val();
@@ -202,19 +214,21 @@ var codenames = {
 $(document).ready(function(){
     $.get("/status"+location.search,"",function(res){
         codenames.load_game(res.game);
+        codenames.update();
         setInterval(codenames.update.bind(codenames),1200);
-        $(".room").text(location.search.substring(location.search.indexOf("=")+1));
         console.log(document.body.clientWidth);
         $(".word").css("font-size",document.body.clientWidth/30);
         if (location.href.indexOf("captain")==-1){
+            $(".hint").text("分享此页面给朋友们即可开始玩耍！")
             return;
         }
+        $(".hint").text("队友猜测时，点击相应代号即可让大家看到该代号的阵营！")
         $(".word").each(function(idx,elm){
             $(elm).click(function(){
                 $(elm).addClass("open");
                 codenames.game.opened[idx] = 1;
                 var url = "/open"+location.search+"&idx="+idx;
-                $.post(url,"",codenames.update);
+                $.post(url,"",codenames.update.bind(codenames));
             });
         })
     });
@@ -222,6 +236,7 @@ $(document).ready(function(){
     $(".btns").append($("<div class='btn' onclick='codenames.submit()'>提交发言</div>"));
     $(".links").append($("<a href="+ url + ">队员链接</a><span>    </span>"));
     $(".links").append($("<a id = 'new_game' href='/captain'>新建游戏</a>"));
+    $(".captain-btns").append($("<div class='btn' onclick='codenames.be_captain()'>我是队长</div>"));
 });
 </script>
 </html>
