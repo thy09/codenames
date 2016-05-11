@@ -204,6 +204,8 @@ $(document).ready(function(){
         codenames.load_game(res.game);
         setInterval(codenames.update.bind(codenames),1200);
         $(".room").text(location.search.substring(location.search.indexOf("=")+1));
+        console.log(document.body.clientWidth);
+        $(".word").css("font-size",document.body.clientWidth/30);
         if (location.href.indexOf("captain")==-1){
             return;
         }
@@ -212,8 +214,7 @@ $(document).ready(function(){
                 $(elm).addClass("open");
                 codenames.game.opened[idx] = 1;
                 var url = "/open"+location.search+"&idx="+idx;
-                $.post(url);
-                codenames.update();
+                $.post(url,"",codenames.update);
             });
         })
     });
