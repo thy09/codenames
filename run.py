@@ -68,6 +68,8 @@ def gen_words():
 
 def load_words(fname):
     for line in open(fname,'r'):
+        if line.find("##")>-1:
+            continue
         words.append(line.rstrip())
 
 load_words('codenames.words')
