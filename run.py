@@ -34,6 +34,22 @@ def openpos():
     game["opened"][idx] = 1
     return jsonify({"status":"success"})
 
+@app.route("/submit",methods = ["POST"])
+def submit_sentence():
+    game = games.get(request.args.get("id"))
+    sentence = request.form["say"]
+    game["discussion"].append(sentence)
+    return jsonify({"status":"success"})
+
+
+@app.route("/update_info")
+def update_info():
+    game = games.get(request.args.get("id"))
+    if game == None:
+        return jsonify({"status":"INVALID_ID"})
+    res = {"opened":game["opened"],
+            "discussion":game.get("discussion",[])[-10:]}
+    return jsonify({"status":"success","game":res})
 
 @app.route("/allgame")
 def allgame():
@@ -53,6 +69,7 @@ def initial_game(start):
     game["words"] = gen_words()
     game["opened"] = [0]*25
     game["dist"] = gen_dist(game["start"])
+    game["discussion"] = []
     games[str(idx)] = game
     return idx
 
