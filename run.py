@@ -1,12 +1,54 @@
 from flask import Flask,render_template,request,redirect, url_for, jsonify
+from flask_socketio import SocketIO, emit, join_room, leave_room, rooms
 import random
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = 'neverguess'
+sockio = SocketIO(app)
+
+def create_app():
+    load_words('codenames.words')
+    return app
 
 games = {}
 words = []
 count = 25
 rbx = [9,8,1]
+
+@sockio.on('connect',namespace = "/sock")
+def connect():
+    pass
+
+@sockio.on('update',namespace = "/sock")
+def update_msg(msg):
+    print msg
+    game = games.get(str(msg["data"].get("id")))
+    sentence = msg["data"].get("say")
+    print msg,sentence,game
+    if not sentence or not game:
+        return
+    game["discussion"].append(sentence)
+    emit("discussion",{"data":sentence},room = str(game["id"]))
+
+@sockio.on('open', namespace='/sock')
+def open_msg(msg):
+    game = games.get(str(msg["data"].get("id")))
+    idx = msg["data"].get("idx")
+    if not game or idx<0 or idx>count-1:
+        return
+    game["opened"][idx] = 1
+    roomid = str(game["id"])
+    print rooms(),roomid
+    emit("open",{"data":idx},room = roomid)
+
+@sockio.on("join",namespace="/sock")
+def join(msg):
+    print rooms()
+    roomid = str(msg["id"])
+    print roomid
+    join_room(roomid)
+    print "joined"
+
 
 @app.route("/captain")
 def captain():
@@ -74,6 +116,7 @@ def initial_game(start):
     game["opened"] = [0]*25
     game["dist"] = gen_dist(game["start"])
     game["discussion"] = []
+    game["id"] = idx
     games[str(idx)] = game
     return idx
 
@@ -93,7 +136,9 @@ def load_words(fname):
             continue
         words.append(line.rstrip())
 
-load_words('codenames.words')
 if __name__ == "__main__":
-    app.debug = True
-    app.run(host='0.0.0.0',port = 23332)
+    app_ = create_app()
+    app_.debug = True
+    #sockio.run(app)
+    sockio.run(app,port=23332)
+   # app_.run(host='0.0.0.0',port = 23332)

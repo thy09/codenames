@@ -3,237 +3,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1">
 <title>Codenames</title>
-<style>
-div{
-    margin: 3px;
-    text-align: center;
-}
-.word{
-    position: relative;
-    float: left;
-    margin: 1%;
-    width: 18%;
-    padding-top: 12%;
-    overflow: hidden;
-    text-align: center;
-    font-size: 10px;
-    color: #eee;
-    background: #555;
-    white-space: nowrap;
-}
-.word p{
-    position: absolute;
-    top: 0%;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-}
-.word.open img{
-    display: block;
-}
-.block.r,
-.word.r.open{
-    background: #d20102;
-}
-.block.b,
-.word.b.open{
-    background: #046ea0;
-}
-.block.x,
-.word.x.open{
-    background: #444;
-}
-.block.p,
-.word.p.open{
-    background: #c1a980;
-}
-.word img{
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: auto;
-    display: none;
-}
-.words{
-    position: relative;
-    background: white;
-    margin: 0 1%;
-    padding: 0;
-}
-.btns,
-.captain{
-    position: relative;
-    text-align: center;
-}
-.captain{
-    border-bottom: 6px solid #d20102;
-    border-top: 6px solid #d20102;
-    padding: 4px;
-    margin: 0% 40% 2%;
-    background: black;
-    border-radius: 5px;
-}
-.captain.b{
-    border-bottom: 4px solid #046ea0;
-    border-top: 4px solid #046ea0;
-}
-.captain .block{
-    float: left;
-    width: 16%;
-    margin: auto;
-    padding-top: 16%;
-    border: 1px black solid;
-    border-radius: 4px;
-}
-.links,.name,.discussion,.sentence{
-    text-align: center;
-}
-.name input,.sentence input{
-    border: 1px solid black;
-    width: 50%;
-}
-.name input{
-    width: 30%;
-}
-.btns{
-    margin: 0% 30%;
-}
-.captain-btns{
-    margin: 0% 30%;
-    text-align: center;
-}
-.btn{
-    border: 1px solid black;
-    padding: 10px;
-}
-.room{
-    font-size: 30px;
-}
-.hidden{
-    display: none;
-}
-p{
-    margin: 2px;
-    padding: 0px;
-}
-</style>
+<link rel="stylesheet" href="./static/codenames.css"></link>
 </head>
 <body>
     <div style="display:none"><img src='./static/logo.png'></img></div>
     <div class="words"></div>
-    <div class="links"></div>
+    <div class="links"><a id = 'new_game' href='/captain'>新建游戏</a></div>
     <div class="captain hidden"></div>
     <div class="hint"></div>
     <div class="name">姓名:<input id="name"></input></div>
     <div class="sentence">发言:<input id="sentence"></input></div>
-    <div class="btns"></div>
+    <div class="btns"><div class='btn' onclick='codenames.submit()'>提交发言</div></div>
     <div class="discussion"></div>
-    <div class="captain-btns"></div>
+    <div class="captain-btns"><div class='btn' onclick='codenames.be_captain()'>我是队长</div></div>
 </body>
 <script src="./static/zepto.js"></script>
+<script type="text/javascript" src="./static/socket.io.min.js"></script>
+<script src="./static/codenames.js"></script>
 <script>
-var codenames = {
-    load_words : function(words){
-        for (var i=0;i<25;i++){
-            var word = $("<div></div>").addClass("word").attr("id","w"+i).html("<p>"+words[i]+"</p>");
-            $(".words").append(word);
-        }
-        $(".words").append($("<div style='clear:both'></div>"));
-    },
-    load_distribution: function(dist){
-        for (var i=0;i<25;i++){
-            $("#w"+i).addClass(dist[i]);
-            var img_url = "./static/"+dist[i]+i%2+".jpg";
-            if (dist[i] == 'x'){
-                img_url = "./static/x.jpg";
-            }
-            $("#w"+i).append("<img src='"+img_url+"'></img>");
-            var block = $("<div></div>").addClass("block "+dist[i]);
-            $(".captain").append(block);
-        }
-        $(".captain").append($("<div style='clear:both'></div>"));
-    },
-    load_opened: function(opened){
-        for (var i=0;i<25;i++){
-            if (opened[i]){
-                $("#w"+i).addClass("open");
-            }else{
-                $("#w"+i).removeClass("open");
-            }
-        }
-    },
-    load_game : function(game){
-        this.load_words(game.words);
-        this.load_distribution(game.dist);
-        this.load_opened(game.opened);
-        this.game = game;
-        if (game.start == 'b'){
-            $(".captain").addClass("b");
-            $("#new_game").attr("href","/captain?start=r");
-            $(".hint").append("<p>此轮游戏由蓝队先开始猜词</p>");
-        }else{
-            $("#new_game").attr("href","/captain?start=b");
-            $(".hint").append("<p>此轮游戏由红队先开始猜词</p>");
-        }
-    },
-    update : function(){
-        $.get("/update_info"+location.search,"",function(res){
-            this.game = res.game;
-            this.load_opened(this.game.opened);
-            $(".discussion").text("");
-            for (var i=0;i<this.game.discussion.length;i++){
-                $(".discussion").prepend("<p>"+this.game.discussion[i]+"</p>")
-            }
-            console.log(res);
-        }.bind(this));
-    },
-    be_captain : function(){
-        if (!confirm("确定是队长？队长会看到答案哦！")){
-            return;
-        }
-        $(".word").each(function(idx,elm){
-            $(elm).click(function(){
-                $(elm).addClass("open");
-                codenames.game.opened[idx] = 1;
-                var url = "/open"+location.search+"&idx="+idx;
-                $.post(url,"",this.update.bind(this));
-            }.bind(this));
-        }.bind(this));
-        $(".captain").removeClass("hidden");
-    },
-    submit : function(){
-        var name = $("#name").val();
-        var sentence = $("#sentence").val();
-        if (name == ""){
-            alert("请输入姓名");
-            return;
-        }
-        if (sentence == ""){
-            alert("请输入发言");
-            return;
-        }
-        $.post("/submit"+location.search,{"say":name+": "+sentence},function(res){
-            if (res.status == "success"){
-                $("#sentence").val("");
-            }else{
-                alert("Fail!");
-            }
-        }.bind(this));
-    }
-}
 $(document).ready(function(){
+    codenames.sock = io.connect("http://" + document.domain + ":" + location.port + "/sock");
     $.get("/status"+location.search,"",function(res){
         codenames.load_game(res.game);
-        codenames.update();
-        setInterval(codenames.update.bind(codenames),1200);
-        $(".word").css("font-size",document.body.clientWidth/30);
+        codenames.sock_init();
+        var h = document.body.clientWidth/30;
+        $(".word").css("font-size",h);
+        $(".word .container p").css("height",h);
         $(".hint").append("<p>分享此页面给朋友们即可开始玩耍！</p>")
         $(".hint").append("<p>队长点击代号即可让大家看到该代号的阵营！</p>")
     });
-    $(".btns").append($("<div class='btn' onclick='codenames.submit()'>提交发言</div>"));
-    $(".links").append($("<a id = 'new_game' href='/captain'>新建游戏</a>"));
-    $(".captain-btns").append($("<div class='btn' onclick='codenames.be_captain()'>我是队长</div>"));
 });
 </script>
 </html>
