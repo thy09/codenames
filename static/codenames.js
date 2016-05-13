@@ -61,8 +61,12 @@ var codenames = {
         if (!confirm("确定是队长？队长会看到答案哦！")){
             return;
         }
+        $(".word").addClass("show");
         $(".word").each(function(idx,elm){
             $(elm).click(function(){
+                if (!confirm("确定点开 "+this.game.words[idx] + " 这个代号?")){
+                    return;
+                }
                 this.game.opened[idx] = 1;
                 var data = {"id":this.game.id,"idx":idx};
                 this.sock.emit("open",{"data":data});
@@ -84,6 +88,7 @@ var codenames = {
         var data = {"id":this.game.id,"say":escape(name+": "+sentence)};
         console.log(data);
         this.sock.emit("update",{"data":data});
+        $("#sentence").val("");
     },
     sock : null,
 }

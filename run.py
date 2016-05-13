@@ -7,7 +7,6 @@ app.config["SECRET_KEY"] = 'neverguess'
 sockio = SocketIO(app)
 
 def create_app():
-    load_words('codenames.words')
     return app
 
 games = {}
@@ -136,6 +135,7 @@ def load_words(fname):
             continue
         words.append(line.rstrip())
 
+load_words('codenames.words')
 if __name__ == "__main__":
     app_ = create_app()
     app_.debug = True
