@@ -12,6 +12,7 @@ def create_app():
 
 games = {}
 words = []
+words = set()
 count = 25
 rbx = [9,8,1]
 
@@ -134,7 +135,12 @@ def load_words(fname):
     for line in open(fname,'r'):
         if line.find("##")>-1:
             continue
-        words.append(line.rstrip())
+        word = line.rstrip()
+        if word in words:
+            print word
+        words.add(line.rstrip())
+       # words.append(line.rstrip())
+    print len(words)
 
 if __name__ == "__main__":
     app_ = create_app()
