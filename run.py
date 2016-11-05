@@ -142,6 +142,7 @@ def load_words(fname):
     print len(words)
 
 load_words('codenames.words')
+load_words("codenames.words.2nd")
 if __name__ == "__main__":
     app_ = create_app()
     app_.debug = True
