@@ -1,3 +1,4 @@
+#! encoding=utf-8
 from flask import Flask,render_template,request,redirect, url_for, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room, rooms
 import random
@@ -36,10 +37,15 @@ def open_msg(msg):
     idx = msg["data"].get("idx")
     if not game or idx<0 or idx>count-1:
         return
-    game["opened"][idx] = 1
+    group = msg["data"].get("group")
+    if not game["opened"][idx] in [group, 3]:
+        game["opened"][idx] += group
+    group_dist = {1:"b", 2:"r"}
+    if game["dist"][idx] == 'g' or game["dist"][idx] == group_dist[group]:
+        game["opened"][idx] = 3
     roomid = str(game["id"])
-    print rooms(),roomid
-    emit("open",{"data":idx},room = roomid)
+    print rooms(),roomid, msg["data"]
+    emit("open",{"data":{"idx":idx, "val":game["opened"][idx]}},room = roomid)
 
 @sockio.on("join",namespace="/sock")
 def join(msg):
@@ -54,7 +60,7 @@ def join(msg):
 def captain():
     game = games.get(request.args.get("id"))
     if game == None:
-        idx = initial_game(request.args.get("start"))
+        idx = initial_game(request.args.get("start"), request.args.get("is_pic"))
         return redirect(url_for(".member",id=idx))
     return render_template("codenames.html")
 
@@ -101,24 +107,29 @@ def update_info():
 def allgame():
     return jsonify({"idx":games.keys()})
 
-def initial_game(start):
+def initial_game(start, is_pic = False):
     upper = 100000000
     idx = random.randint(1,upper)
     while (games.has_key(idx)):
         idx = random.randint(0,upper)
     game = {}
-    if start == 'r':
-        game["start"] = 'r'
-    else:
-        game["start"] = 'b'
-    game['status'] = game['start']
-    game["words"] = gen_words()
+    game['status'] = None
+    game["words"] = gen_words(is_pic)
     game["opened"] = [0]*25
-    game["dist"] = gen_dist(game["start"])
+    game["dist"] = gen_dist_duet()
     game["discussion"] = []
     game["id"] = idx
     games[str(idx)] = game
     return idx
+
+duet = [6,6,3,3]
+def gen_dist_duet():
+    xx = random.randint(0, duet[3])
+    dist = ['r'] * duet[0] + ['b'] * duet[1] + ['g'] * duet[2] + \
+    ['x'] * xx + ['y'] * (duet[3]-xx) + ['z']*(duet[3]-xx) + \
+    ['p'] * (count - sum(duet) - duet[3] + xx)
+    random.shuffle(dist)
+    return dist
 
 def gen_dist(start):
     dist = ['r']*rbx[0] + ['b']*rbx[1] + ['x']*rbx[2] + ['p']*(count-sum(rbx))
@@ -127,7 +138,9 @@ def gen_dist(start):
     random.shuffle(dist)
     return dist
 
-def gen_words():
+def gen_words(is_pic = False):
+    if is_pic:
+        return [u"图片"] * count
     return random.sample(words,count)
 
 def load_words(fname):
@@ -147,5 +160,5 @@ if __name__ == "__main__":
     app_ = create_app()
     app_.debug = True
     #sockio.run(app)
-    sockio.run(app,port=23332)
+    sockio.run(app,port=24442)
    # app_.run(host='0.0.0.0',port = 23332)
