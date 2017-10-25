@@ -29,8 +29,10 @@ var codenames = {
             if (opened[i] == 3){
                 $("#w"+i).addClass("open");
                 $("#wb"+i).addClass("open");
-                $("#w"+i+" img").attr("src", this.game.g_url);
-                $("#wb"+i+" img").attr("src", this.game.g_url);
+                if (this.game.dist[i] == 'r' || this.game.dist[i] == 'b'){
+                    $("#w"+i+" img").attr("src", this.game.g_url);
+                    $("#wb"+i+" img").attr("src", this.game.g_url);
+                }
             }
             if (opened[i] == this.game.group){
                 $("#w"+i).addClass("open");
@@ -74,9 +76,10 @@ var codenames = {
             if (val == 3 - codenames.game.group || val == 3){
                 $("#wb"+msg.data.idx).addClass("open");
             }
-            if (val == 3){
+            if (val == 3 && (codenames.game.dist[idx] == 'r' || codenames.game.dist[idx] == 'b')){
                 $("#w"+idx+" img").attr("src", codenames.game.g_url);
                 $("#wb"+idx+" img").attr("src", codenames.game.g_url);
+                console.log("Change URL:" + idx);
             }
             codenames.game.opened[idx] = val;
         });
