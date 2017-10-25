@@ -41,11 +41,33 @@ def open_msg(msg):
     if not game["opened"][idx] in [group, 3]:
         game["opened"][idx] += group
     group_dist = {1:"b", 2:"r"}
+    ori_round = game["round"]
     if game["dist"][idx] == 'g' or game["dist"][idx] == group_dist[group]:
         game["opened"][idx] = 3
+        result = "正确"
+        game["status"] = group
+        game["to_guess"] -= 1
+    else:
+        result = "错误"
+        game["round"] += 1
+        game["status"] = 3 - group
+    death_dist = {1:"z", 2:"y"}
+    if (game["to_guess"] == 0):
+        game["status"] = "win"
+    if game["dist"][idx] == 'x' or game["dist"][idx] == death_dist[group]:
+        game["status"] = "death"
     roomid = str(game["id"])
     print rooms(),roomid, msg["data"]
-    emit("open",{"data":{"idx":idx, "val":game["opened"][idx]}},room = roomid)
+    emit("open",{"data":{"idx":idx, "val":game["opened"][idx], "status":game["status"]}},room = roomid)
+    sentence = "回合%d: 队伍%d猜了 %s %s" % (ori_round, group, game["words"][idx], result)
+    emit("discussion",{"data":sentence},room = str(game["id"]))
+    if game["status"] == "win":
+        emit("discussion", {"data": "全部猜对，游戏胜利"})
+    elif game["status"] == "death":
+        emit("discussion", {"data": "猜到死亡词汇，游戏结束"}, str(game["id"]))
+    elif game["status"] != group:
+        sentence = "队伍转换, 由队伍%d开始提示"%(group)
+        emit("discussion",{"data":sentence},room = str(game["id"]))
 
 @sockio.on("join",namespace="/sock")
 def join(msg):
@@ -114,6 +136,8 @@ def initial_game(start, is_pic = False):
         idx = random.randint(0,upper)
     game = {}
     game['status'] = None
+    game["round"] = 1
+    game["to_guess"] = duet[0]+duet[1]+duet[2]
     game["words"] = gen_words(is_pic)
     game["opened"] = [0]*25
     game["dist"] = gen_dist_duet()

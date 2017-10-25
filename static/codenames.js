@@ -79,9 +79,9 @@ var codenames = {
             if (val == 3 && (codenames.game.dist[idx] == 'r' || codenames.game.dist[idx] == 'b')){
                 $("#w"+idx+" img").attr("src", codenames.game.g_url);
                 $("#wb"+idx+" img").attr("src", codenames.game.g_url);
-                console.log("Change URL:" + idx);
             }
             codenames.game.opened[idx] = val;
+            codenames.game.status = msg.data.status;
         });
     },
     show_words : function(){
@@ -158,6 +158,10 @@ var codenames = {
     add_click : function(){
         $(".words .word").each(function(idx,elm){
             $(elm).click(function(){
+                if (this.game.status !== null && this.game.status != this.game.group){
+                    alert("现在队伍" + this.game.group+ "不可进行猜测");
+                    return;
+                }
                 var idx = parseInt($(elm).attr("id").substr(1));
                 if (!confirm("确定点开 "+this.game.words[idx] + " 这个代号?")){
                     return;
