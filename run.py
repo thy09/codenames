@@ -16,20 +16,36 @@ words = set()
 count = 25
 rbx = [9,8,1]
 
+def add_sentence(game, sentence):
+    game["discussion"].append(sentence)
+    emit("discussion",{"data":sentence},room = str(game["id"]))
+
 @sockio.on('connect',namespace = "/sock")
 def connect():
     pass
 
 @sockio.on('update',namespace = "/sock")
 def update_msg(msg):
-    print msg
     game = games.get(str(msg["data"].get("id")))
     sentence = msg["data"].get("say")
     print msg,sentence,game
     if not sentence or not game:
         return
-    game["discussion"].append(sentence)
-    emit("discussion",{"data":sentence},room = str(game["id"]))
+    add_sentence(game, sentence)
+
+@sockio.on('pass', namespace = '/sock')
+def pass_round(msg):
+    game = games.get(str(msg["data"].get("id")))
+    group = msg["data"].get("group")
+    if group != game["status"]:
+        return
+    if not game["can_pass"]:
+        game["round"] += 1
+    add_sentence(game, "队伍转换，由队伍%d开始提示"%(group))
+    game["status"] = 3-group
+    room = str(game["id"])
+    emit("pass",{"status":game["status"]}, room = room)
+
 
 @sockio.on('open', namespace='/sock')
 def open_msg(msg):
@@ -47,27 +63,27 @@ def open_msg(msg):
         result = "正确"
         game["status"] = group
         game["to_guess"] -= 1
+        game["can_pass"] = False
     else:
         result = "错误"
         game["round"] += 1
         game["status"] = 3 - group
+        game["can_pass"] = True
     death_dist = {1:"z", 2:"y"}
     if (game["to_guess"] == 0):
         game["status"] = "win"
     if game["dist"][idx] == 'x' or game["dist"][idx] == death_dist[group]:
         game["status"] = "death"
     roomid = str(game["id"])
-    print rooms(),roomid, msg["data"]
     emit("open",{"data":{"idx":idx, "val":game["opened"][idx], "status":game["status"]}},room = roomid)
     sentence = "回合%d: 队伍%d猜了 %s %s" % (ori_round, group, game["words"][idx], result)
-    emit("discussion",{"data":sentence},room = str(game["id"]))
+    add_sentence(game, sentence)
     if game["status"] == "win":
-        emit("discussion", {"data": "全部猜对，游戏胜利"})
+        add_sentence(game, "全部猜对，游戏胜利")
     elif game["status"] == "death":
-        emit("discussion", {"data": "猜到死亡词汇，游戏结束"}, str(game["id"]))
+        add_sentence(game, "猜到死亡词汇，游戏结束")
     elif game["status"] != group:
-        sentence = "队伍转换, 由队伍%d开始提示"%(group)
-        emit("discussion",{"data":sentence},room = str(game["id"]))
+        add_sentence(game, "队伍转换，由队伍%d开始提示"%(group))
 
 @sockio.on("join",namespace="/sock")
 def join(msg):
@@ -137,6 +153,7 @@ def initial_game(start, is_pic = False):
     game = {}
     game['status'] = None
     game["round"] = 1
+    game["can_pass"] = True
     game["to_guess"] = duet[0]+duet[1]+duet[2]
     game["words"] = gen_words(is_pic)
     game["opened"] = [0]*25

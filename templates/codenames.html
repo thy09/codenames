@@ -8,6 +8,7 @@
 <body>
     <div style="display:none"><img src='./static/logo.png'></img></div>
     <div class="words"></div>
+    <div class="pass hidden"><div class="btn" onclick = 'codenames.pass()'>主动切换</div></div>
     <div class="links"><a id = 'new_game' href='/captain'>新建游戏</a></div>
     <div class="links"><a id = 'new_game' href='/captain?is_pic=1'>新建图片游戏</a></div>
     <div class="captain_words hidden"></div>
@@ -15,14 +16,14 @@
     <div class="name">姓名:<input id="name"></input></div>
     <div class="sentence">发言:<input id="sentence"></input></div>
     <div class="btns"><div class='btn' onclick='codenames.submit()'>提交发言</div></div>
-    <div class="discussion"></div>
+    <div class="discussion hidden"></div>
     <div class="captain-btns one"><div class='btn' onclick='codenames.be_one()'>我是一队</div></div>
     <div class="captain-btns two"><div class='btn' onclick='codenames.be_two()'>我是二队</div></div>
     <div class="links"><a href="./static/missions.jpg">Mission地图</a></div>
 </body>
 <script src="./static/zepto.js"></script>
 <script type="text/javascript" src="./static/socket.io.min.js"></script>
-<script src="./static/codenames.js?v=20171026v1"></script>
+<script src="./static/codenames.js?v=20171026v2"></script>
 <script>
 $(document).ready(function(){
     codenames.sock = io.connect("http://" + document.domain + ":" + location.port + "/sock");

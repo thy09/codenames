@@ -60,11 +60,27 @@ var codenames = {
             $(".discussion").prepend("<p>"+unescape(this.game.discussion[i])+"</p>")
         }
     },
+    pass : function(){
+        if (this.game.group != this.game.status){
+            alert("由对方进行选择是否切换");
+            return;
+        }
+        if (!confirm("确定切换队伍？")){
+            return;
+        }
+        this.sock.emit("pass",{"data":{"group":this.game.group, "id":this.game.id}});
+    },
     sock_init : function(){
         this.sock.emit("join",{"id":this.game.id});
         this.sock.on("discussion", function(msg){
             console.log(msg);
             $(".discussion").prepend("<p>"+ unescape(msg.data) +"</p>");
+        });
+        this.sock.on("pass", function(msg){
+            if (codenames.game.status != msg.status && msg.status == codenames.game.group){
+                alert("发生了队伍切换！");
+            }
+            codenames.game.status = msg.status;
         });
         this.sock.on("open", function(msg){
             console.log(msg);
@@ -85,6 +101,8 @@ var codenames = {
         });
     },
     show_words : function(){
+        $(".discussion").removeClass("hidden");
+        $(".pass").removeClass("hidden");
         var colors = ["r","g","b","z","y","x"];
         for (var i in colors){
             $(".words .word."+colors[i]).removeClass(colors[i]).addClass("p");           
