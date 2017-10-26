@@ -28,7 +28,6 @@ def connect():
 def update_msg(msg):
     game = games.get(str(msg["data"].get("id")))
     sentence = msg["data"].get("say")
-    print msg,sentence,game
     if not sentence or not game:
         return
     add_sentence(game, sentence)
@@ -87,11 +86,8 @@ def open_msg(msg):
 
 @sockio.on("join",namespace="/sock")
 def join(msg):
-    print rooms()
     roomid = str(msg["id"])
-    print roomid
     join_room(roomid)
-    print "joined"
 
 
 @app.route("/captain")
@@ -189,11 +185,7 @@ def load_words(fname):
         if line.find("##")>-1:
             continue
         word = line.rstrip()
-        if word in words:
-            print word
         words.add(line.rstrip())
-       # words.append(line.rstrip())
-    print len(words)
 
 load_words('codenames.words')
 load_words("codenames.words.2nd")
