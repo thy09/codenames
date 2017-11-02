@@ -38,9 +38,10 @@ def pass_round(msg):
     group = msg["data"].get("group")
     if group != game["status"]:
         return
-    if not game["can_pass"]:
+    add_sentence(game, "回合%d:主动转换，队伍%d开始提示"%(game["round"], group))
+    if game["can_pass"] == False:
         game["round"] += 1
-    add_sentence(game, "队伍转换，由队伍%d开始提示"%(group))
+        game["can_pass"] = True
     game["status"] = 3-group
     room = str(game["id"])
     emit("pass",{"status":game["status"]}, room = room)
@@ -57,17 +58,20 @@ def open_msg(msg):
         game["opened"][idx] += group
     group_dist = {1:"b", 2:"r"}
     ori_round = game["round"]
+    correct = False
     if game["dist"][idx] == 'g' or game["dist"][idx] == group_dist[group]:
         game["opened"][idx] = 3
         result = "正确"
         game["status"] = group
         game["to_guess"] -= 1
         game["can_pass"] = False
+        correct = True
     else:
         result = "错误"
         game["round"] += 1
         game["status"] = 3 - group
         game["can_pass"] = True
+        game["error"] += 1
     death_dist = {1:"z", 2:"y"}
     if (game["to_guess"] == 0):
         game["status"] = "win"
@@ -75,14 +79,18 @@ def open_msg(msg):
         game["status"] = "death"
     roomid = str(game["id"])
     emit("open",{"data":{"idx":idx, "val":game["opened"][idx], "status":game["status"]}},room = roomid)
-    sentence = "回合%d: 队伍%d猜了 %s %s" % (ori_round, group, game["words"][idx], result)
+    sentence = "回合%d: 队伍%d猜了 %s" % (ori_round, group, game["words"][idx])
+    if correct:
+        sentence = "%s 正确" % sentence
+    else:
+        sentence = "%s 第%d个错误" % (sentence, game["error"])
     add_sentence(game, sentence)
     if game["status"] == "win":
         add_sentence(game, "全部猜对，游戏胜利")
     elif game["status"] == "death":
         add_sentence(game, "猜到死亡词汇，游戏结束")
     elif game["status"] != group:
-        add_sentence(game, "队伍转换，由队伍%d开始提示"%(group))
+        add_sentence(game, "队伍转换，队伍%d开始提示"%(group))
 
 @sockio.on("join",namespace="/sock")
 def join(msg):
@@ -150,6 +158,7 @@ def initial_game(start, is_pic = False):
     game['status'] = None
     game["round"] = 1
     game["can_pass"] = True
+    game["error"] = 0
     game["to_guess"] = duet[0]+duet[1]+duet[2]
     game["words"] = gen_words(is_pic)
     game["opened"] = [0]*25
